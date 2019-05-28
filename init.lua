@@ -127,7 +127,7 @@ function death_timer.loop(name)
 				if player then
 					player:set_properties(p.properties)
 				end
-				
+
 				p.properties = nil
 			end
 		else
@@ -167,11 +167,13 @@ minetest.register_on_dieplayer(function(player)
 	if not players[name] then
 		players[name] = {}
 		players[name].longtime = initial_timeout
+		players[name].time = initial_timeout
+	else
+		players[name].time = players[name].longtime + timeout
+		players[name].longtime = players[name].time
 	end
 
 	players[name].interact = privs.interact
-	players[name].time = players[name].longtime + timeout
-	players[name].longtime = players[name].time
 	
 	if not cloaking_mod then
 		if not players[name].properties then
