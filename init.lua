@@ -58,7 +58,7 @@ end)
 
 minetest.register_entity("death_timer:death", {
 	is_visible = false,
-	self.key = 0,
+	key = 0,
 	get_staticdata = function(self)
 		return minetest.serialize({key = self.key})
 	end,
