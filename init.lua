@@ -30,10 +30,12 @@ minetest.register_on_joinplayer(function(player)
 			player:set_attach(player_objs[name], "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
 			player_objs[name]:set_pos(pos)
 		end
+
 		player:set_properties({
 			visual_size    = {x = 0, y = 0},
 			["selectionbox"] = {0, 0, 0, 0, 0, 0},
 		})
+		
 		death_timer.loop(name)
 	end
 end)
@@ -94,8 +96,6 @@ function death_timer.loop(name)
 
 		p.time = nil
 
-		p.pos = nil
-
 		players[name] = p
 
 		storage:set_string("players", minetest.serialize(players))
@@ -127,7 +127,6 @@ minetest.register_on_dieplayer(function(player)
 		players[name].longtime = initial_timeout
 	end
 
-	players[name].pos = pos
 	players[name].interact = privs.interact
 	players[name].time = players[name].longtime + timeout
 	players[name].longtime = players[name].time
