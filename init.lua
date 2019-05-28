@@ -39,10 +39,18 @@ minetest.register_on_joinplayer(function(player)
 	if p and p.time > 1 then
 		death_timer.create_deathholder(player, name)
 		
-		player:set_properties({
-			visual_size    = {x = 0, y = 0},
-			["selectionbox"] = {0, 0, 0, 0, 0, 0},
-		})
+		if not cloaking.hide_player then
+			if not players[name].properties then
+				players[name].properties = player:get_properties()
+			end
+	
+			player:set_properties({
+				visual_size    = {x = 0, y = 0},
+				["selectionbox"] = {0, 0, 0, 0, 0, 0},
+			})
+		else
+			cloaking.hide_player(player)
+		end
 
 		death_timer.loop(name)
 	end
@@ -88,7 +96,7 @@ function death_timer.loop(name)
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
 
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
-		
+
 		minetest.after(0, function(players, name) 
 			local p = minetest.get_player_by_name(name)
 			if p then
@@ -104,11 +112,15 @@ function death_timer.loop(name)
 			p.interact = nil
 			minetest.set_player_privs(name, privs)
 		end
-
-		if p.properties then
+		if not cloaking.unhide_player then
+			if p.properties then
+				local player = minetest.get_player_by_name(name)
+				player:set_properties(p.properties)
+				p.properties = nil
+			end
+		else
 			local player = minetest.get_player_by_name(name)
-			player:set_properties(p.properties)
-			p.properties = nil
+			cloaking.unhide_player(player)
 		end
 
 		p.time = nil
@@ -149,14 +161,18 @@ minetest.register_on_dieplayer(function(player)
 	players[name].time = players[name].longtime + timeout
 	players[name].longtime = players[name].time
 	
-	if not players[name].properties then
-		players[name].properties = player:get_properties()
-	end
+	if not cloaking.hide_player then
+		if not players[name].properties then
+			players[name].properties = player:get_properties()
+		end
 
-	player:set_properties({
-        visual_size    = {x = 0, y = 0},
-        ["selectionbox"] = {0, 0, 0, 0, 0, 0},
-    })
+		player:set_properties({
+			visual_size    = {x = 0, y = 0},
+			["selectionbox"] = {0, 0, 0, 0, 0, 0},
+		})
+	else
+		cloaking.hide_player(player)
+	end
 
 	privs.interact = false
 
