@@ -8,7 +8,6 @@ local initial_timeout = tonumber(minetest.settings:get("death_timer.initial_time
 local timeout = tonumber(minetest.settings:get("death_timer.timeout")) or 1
 local timeout_reduce_loop = tonumber(minetest.settings:get("death_timer.timeout_reduce_loop")) or 3600
 local timeout_reduce_rate = tonumber(minetest.settings:get("death_timer.timeout_reduce_rate")) or 1
-local ekey = minetest.get_us_time()
 local cloaking_mod = minetest.global_exists("cloaking")
 
 players = minetest.deserialize(storage:get_string("players"))
@@ -37,7 +36,7 @@ end
 minetest.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
 	local p = players[name]
-	if p and p.time > 1 then
+	if p and p.time and p.time > 1 then
 		death_timer.create_deathholder(player, name)
 		
 		if not cloaking_mod then
@@ -59,15 +58,8 @@ end)
 
 minetest.register_entity("death_timer:death", {
 	is_visible = false,
-	key = 0,
-	get_staticdata = function(self)
-		return minetest.serialize({key = self.key})
-	end,
 	on_activate = function(self, staticdata)
-		local ds = minetest.deserialize(staticdata)
-		if not (ds and ds.key and ds.key == ekey) then
-			self.object:remove()
-		end
+
 	end
 })
 
@@ -107,12 +99,13 @@ function death_timer.loop(name)
 			end
 		end, players, name)
 
-		if p.interact ~= nil then
+		if p.interact then
 			local privs = minetest.get_player_privs(name)
 			privs.interact = p.interact
 			p.interact = nil
 			minetest.set_player_privs(name, privs)
 		end
+
 		if not cloaking_mod then
 			if p.properties then
 				local player = minetest.get_player_by_name(name)
@@ -151,7 +144,6 @@ end)
 minetest.register_on_dieplayer(function(player)
 	local name = player:get_player_name()
 	local privs = minetest.get_player_privs(name)
-	local pos = player:get_pos()
 
 	if not players[name] then
 		players[name] = {}
