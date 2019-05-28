@@ -3,6 +3,7 @@ local storage = minetest.get_mod_storage()
 local death_timer = {}
 local players
 local player_objs = {}
+local loops = {}
 
 local initial_timeout = tonumber(minetest.settings:get("death_timer.initial_timeout")) or 8
 local timeout = tonumber(minetest.settings:get("death_timer.timeout")) or 1
@@ -34,26 +35,33 @@ function death_timer.create_deathholder(player, name)
 end
 
 minetest.register_on_joinplayer(function(player)
-	local name = player:get_player_name()
-	local p = players[name]
-	if p and p.time and p.time > 1 then
-		death_timer.create_deathholder(player, name)
-		
-		if not cloaking_mod then
-			if not players[name].properties then
-				players[name].properties = player:get_properties()
+	minetest.after(2, function(name)
+		local p = players[name]
+		if p and p.time and p.time > 1 then
+			local player = minetest.get_player_by_name(name)
+			
+			if not player then
+				return
 			end
-	
-			player:set_properties({
-				visual_size    = {x = 0, y = 0},
-				["selectionbox"] = {0, 0, 0, 0, 0, 0},
-			})
-		else
-			cloaking.hide_player(player)
-		end
 
-		death_timer.loop(name)
-	end
+			if not cloaking_mod then
+				if not players[name].properties then
+					players[name].properties = player:get_properties()
+				end
+		
+				player:set_properties({
+					visual_size    = {x = 0, y = 0},
+					["selectionbox"] = {0, 0, 0, 0, 0, 0},
+				})
+			else
+				cloaking.hide_player(name)
+			end
+
+			death_timer.create_deathholder(player, name)
+
+			death_timer.create_loop(name)
+		end
+	end, player:get_player_name())
 end)
 
 minetest.register_entity("death_timer:death", {
@@ -80,6 +88,13 @@ function death_timer.reduce_loop()
 	minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
 end
 
+function death_timer.create_loop(name)
+	if not loops[name] then
+		loops[name] = true
+		death_timer.loop(name)
+	end
+end
+
 function death_timer.loop(name)
 	local p = players[name]
 	p.time = p.time - 1
@@ -90,14 +105,13 @@ function death_timer.loop(name)
 
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
 
-		minetest.after(0, function(players, name) 
-			local p = minetest.get_player_by_name(name)
-			if p then
-				p:set_detach()
-				player_objs[name]:remove()
-				player_objs[name] = nil
-			end
-		end, players, name)
+		local obj = player_objs[name]
+		if obj then
+			obj:set_detach()
+			obj:remove()
+			obj = nil
+			player_objs[name] = obj
+		end
 
 		if p.interact then
 			local privs = minetest.get_player_privs(name)
@@ -109,17 +123,22 @@ function death_timer.loop(name)
 		if not cloaking_mod then
 			if p.properties then
 				local player = minetest.get_player_by_name(name)
-				player:set_properties(p.properties)
+				
+				if player then
+					player:set_properties(p.properties)
+				end
+				
 				p.properties = nil
 			end
 		else
-			local player = minetest.get_player_by_name(name)
-			cloaking.unhide_player(player)
+			cloaking.unhide_player(name)
 		end
 
 		p.time = nil
 
 		players[name] = p
+
+		loops[name] = nil
 
 		storage:set_string("players", minetest.serialize(players))
 	else
@@ -135,7 +154,7 @@ minetest.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
 
 	if player_objs[name] then
-		player:set_detach()
+		player_objs[name]:set_detach()
 		player_objs[name]:remove()
 		player_objs[name] = nil
 	end
@@ -195,7 +214,7 @@ minetest.register_on_respawnplayer(function(player)
 	end
 
 	minetest.after(1, minetest.show_formspec, name, "death_timer:death_screen", formspec)
-	minetest.after(2, death_timer.loop, name)
+	minetest.after(2, death_timer.create_loop, name)
 end)
 
 minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
