@@ -23,12 +23,14 @@ function death_timer.create_deathholder(player, name)
 	if player and obj then
 		local pos = player:get_pos()
 		player:set_attach(obj, "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
+		obj:get_luaentity().owner = name
 		obj:set_pos(pos)
 		player_objs[name] = obj
 	elseif player and not obj then
 		local pos = player:get_pos()
 		obj = minetest.add_entity(pos, "death_timer:death")
 		player:set_attach(obj, "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
+		obj:get_luaentity().owner = name
 		obj:set_pos(pos)
 		player_objs[name] = obj
 	end
@@ -66,8 +68,20 @@ end)
 
 minetest.register_entity("death_timer:death", {
 	is_visible = false,
+	on_step = function(self, dtime)
+		self.timer= self.timer + dtime
+		if self.timer >= 1 then
+			self.timer = 0
+			if not (self.owner and minetest.get_player_by_name(self.owner)) then
+				self.object:remove()
+			else
+				self.object:set_attach(minetest.get_player_by_name(self.owner), "", {x = 0,y = 0,z = 0}, {x = 0,y = 0,z = 0})
+			end
+		end
+	end,
 	on_activate = function(self, staticdata)
-
+		self.timer = 0
+		self.object:set_armor_groups({immortal = 1, ignore = 1, do_not_delete = 1})
 	end
 })
 
@@ -131,7 +145,9 @@ function death_timer.loop(name)
 				p.properties = nil
 			end
 		else
-			cloaking.unhide_player(name)
+			if minetest.get_player_by_name(name) then
+				cloaking.unhide_player(name)
+			end
 		end
 
 		p.time = nil
