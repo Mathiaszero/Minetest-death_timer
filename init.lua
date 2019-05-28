@@ -4,10 +4,10 @@ local death_timer = {}
 local players
 local player_objs = {}
 
-local timeout = 5
-local initial_timeout = 5
-local timeout_reduce_loop = 3600
-local timeout_reduce_rate = 1
+local initial_timeout = tonumber(minetest.settings:get("death_timer.initial_timeout")) or 8
+local timeout = tonumber(minetest.settings:get("death_timer.timeout")) or 1
+local timeout_reduce_loop = tonumber(minetest.settings:get("death_timer.timeout_reduce_loop")) or 3600
+local timeout_reduce_rate = tonumber(minetest.settings:get("death_timer.timeout_reduce_rate")) or 1
 local ekey = minetest.get_us_time()
 
 players = minetest.deserialize(storage:get_string("players"))
