@@ -142,10 +142,8 @@ function death_timer.loop(name)
 
 				p.properties = nil
 			end
-		else
-			if minetest.get_player_by_name(name) then
-				cloaking.unhide_player(name)
-			end
+		elseif minetest.get_player_by_name(name) then
+			cloaking.unhide_player(name)
 		end
 
 		p.time = nil
