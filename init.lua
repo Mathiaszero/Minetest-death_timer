@@ -37,7 +37,7 @@ function death_timer.create_deathholder(player, name)
 end
 
 minetest.register_on_joinplayer(function(player)
-	minetest.after(2, function(name)
+	minetest.after(5, function(name)
 		local p = players[name]
 		if p and p.time and p.time > 1 then
 			local player = minetest.get_player_by_name(name)
