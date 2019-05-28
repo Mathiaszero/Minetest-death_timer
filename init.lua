@@ -1,13 +1,14 @@
 local storage = minetest.get_mod_storage()
 
+local death_timer = {}
 local players
 local player_objs = {}
-local death_timer = {}
 
 local timeout = 5
 local initial_timeout = 5
 local timeout_reduce_loop = 3600
 local timeout_reduce_rate = 1
+local ekey = minetest.get_us_time()
 
 players = minetest.deserialize(storage:get_string("players"))
 
@@ -16,36 +17,48 @@ if not players then
 	storage:set_string("players", minetest.serialize(players))
 end
 
+function death_timer.create_deathholder(player, name)
+	local obj = player_objs[name]
+	if player and obj then
+		local pos = player:get_pos()
+		player:set_attach(obj, "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
+		obj:set_pos(pos)
+		player_objs[name] = obj
+	elseif player and not obj then
+		local pos = player:get_pos()
+		obj = minetest.add_entity(pos, "death_timer:death")
+		player:set_attach(obj, "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
+		obj:set_pos(pos)
+		player_objs[name] = obj
+	end
+end
+
 minetest.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
 	local p = players[name]
 	if p and p.time > 1 then
-		if player and player_objs[name] then
-			local pos = player:get_pos()
-			player:set_attach(player_objs[name], "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
-			player_objs[name]:set_pos(pos)
-		elseif player and not player_objs[name] then
-			local pos = player:get_pos()
-			player_objs[name] = minetest.add_entity(pos, "death_timer:death")
-			player:set_attach(player_objs[name], "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
-			player_objs[name]:set_pos(pos)
-		end
-
+		death_timer.create_deathholder(player, name)
+		
 		player:set_properties({
 			visual_size    = {x = 0, y = 0},
 			["selectionbox"] = {0, 0, 0, 0, 0, 0},
 		})
-		
+
 		death_timer.loop(name)
 	end
 end)
 
 minetest.register_entity("death_timer:death", {
-	initial_properties = {
-		is_visible = false
-	},
-	on_activate = function(staticdata, dtime_s)
-		
+	is_visible = false,
+	self.key = 0,
+	get_staticdata = function(self)
+		return minetest.serialize({key = self.key})
+	end,
+	on_activate = function(self, staticdata)
+		local ds = minetest.deserialize(staticdata)
+		if not (ds and ds.key and ds.key == ekey) then
+			self.object:remove()
+		end
 	end
 })
 
@@ -60,7 +73,9 @@ function death_timer.reduce_loop()
 			minetest.after(0, function(k) players[k] = nil end, k)
 		end
 	end
+
 	minetest.after(1, function() storage:set_string("players", minetest.serialize(players)) end)
+	
 	minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
 end
 
@@ -71,7 +86,9 @@ function death_timer.loop(name)
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 		"label[4.85,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
+
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
+		
 		minetest.after(0, function(players, name) 
 			local p = minetest.get_player_by_name(name)
 			if p then
@@ -110,6 +127,7 @@ end
 
 minetest.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
+
 	if player_objs[name] then
 		player:set_detach()
 		player_objs[name]:remove()
@@ -149,21 +167,14 @@ end)
 
 minetest.register_on_respawnplayer(function(player)
 	local name = player:get_player_name()
+
 	minetest.after(0, function(name)
 		local player = minetest.get_player_by_name(name)
-		if player and player_objs[name] then
-			pos = player:get_pos()
-			player:set_attach(player_objs[name], "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
-			player_objs[name]:set_pos(pos)
-		elseif player and not player_objs[name] then
-			pos = player:get_pos()
-			player_objs[name] = minetest.add_entity(pos, "death_timer:death")
-			player:set_attach(player_objs[name], "", {x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
-			player_objs[name]:set_pos(pos)
-		end
+		death_timer.create_deathholder(player, name)
 	end, name)
 
 	local formspec
+
 	if players[name] and players[name].time then
 		formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 		"label[4.85,1.35;Wait" ..
@@ -173,6 +184,7 @@ minetest.register_on_respawnplayer(function(player)
 		"label[4.85,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
 	end
+
 	minetest.after(1, minetest.show_formspec, name, "death_timer:death_screen", formspec)
 	minetest.after(2, death_timer.loop, name)
 end)
