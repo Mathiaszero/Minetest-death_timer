@@ -70,12 +70,10 @@ minetest.register_entity("death_timer:death", {
 	is_visible = false,
 	on_step = function(self, dtime)
 		self.timer= self.timer + dtime
-		if self.timer >= 1 then
+		if self.timer >= 10 then
 			self.timer = 0
 			if not (self.owner and minetest.get_player_by_name(self.owner)) then
 				self.object:remove()
-			else
-				self.object:set_attach(minetest.get_player_by_name(self.owner), "", {x = 0,y = 0,z = 0}, {x = 0,y = 0,z = 0})
 			end
 		end
 	end,
