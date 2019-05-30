@@ -200,7 +200,7 @@ minetest.register_on_dieplayer(function(player)
 		cloaking.hide_player(player)
 	end
 
-	privs.interact = false
+	privs.interact = nil
 
 	minetest.set_player_privs(name, privs)
 
