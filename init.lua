@@ -109,8 +109,7 @@ end
 
 function death_timer.loop(name)
 	local p = players[name]
-	p.time = p.time - 1
-	if p.time < 1 then
+	if not p.time or p.time < 1 then
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 		"label[4.85,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
@@ -154,6 +153,7 @@ function death_timer.loop(name)
 
 		storage:set_string("players", minetest.serialize(players))
 	else
+		p.time = p.time - 1
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 			"label[4.85,1.35;Wait" ..
 			"]button[4,3;3,0.5;death_button;" .. p.time .."]"
@@ -207,28 +207,40 @@ minetest.register_on_dieplayer(function(player)
 	storage:set_string("players", minetest.serialize(players))
 end)
 
-minetest.register_on_respawnplayer(function(player)
-	local name = player:get_player_name()
+minetest.after(0, function()
+	minetest.register_on_respawnplayer(function(player)
+		local name = player:get_player_name()
 
-	minetest.after(0, function(name)
-		local player = minetest.get_player_by_name(name)
-		death_timer.create_deathholder(player, name)
-	end, name)
+		minetest.after(1, function(name)
+			local player = minetest.get_player_by_name(name)
+			death_timer.create_deathholder(player, name)
+		end, name)
 
-	local formspec
+		local formspec
 
-	if players[name] and players[name].time then
-		formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
-		"label[4.85,1.35;Wait" ..
-		"]button[4,3;3,0.5;death_button;" .. players[name].time .."]"
-	else
-		formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
-		"label[4.85,1.35;Wait" ..
-		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
-	end
+		if players[name] and players[name].time then
+			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
+			"label[4.85,1.35;Wait" ..
+			"]button[4,3;3,0.5;death_button;" .. players[name].time .."]"
+		else
+			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
+			"label[4.85,1.35;Wait" ..
+			"]button_exit[4,3;3,0.5;death_button;Play" .."]"
+		end
 
-	minetest.after(1, minetest.show_formspec, name, "death_timer:death_screen", formspec)
-	minetest.after(2, death_timer.create_loop, name)
+		minetest.after(1, minetest.show_formspec, name, "death_timer:death_screen", formspec)
+		minetest.after(2, death_timer.create_loop, name)
+	end)
 end)
+
+minetest.register_on_player_hpchange(function(player, hp_change, reason)
+	local p = players[player:get_player_name()]
+	
+	if p and p.time and p.time > 1 then
+		return 100
+	end
+	
+	return hp_change
+end, true)
 
 minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
