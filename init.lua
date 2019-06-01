@@ -174,22 +174,28 @@ end)
 
 minetest.register_on_dieplayer(function(player)
 	local name = player:get_player_name()
-	local privs = minetest.get_player_privs(name)
 
-	if not players[name] then
-		players[name] = {}
-		players[name].longtime = initial_timeout
-		players[name].time = initial_timeout
-	else
-		players[name].time = players[name].longtime + timeout
-		players[name].longtime = players[name].time
+	local p = players[name]
+	if p and p.time and p.time < 1 then
+		return
 	end
 
-	players[name].interact = privs.interact
+	local privs = minetest.get_player_privs(name)
+
+	if not p then
+		p = {}
+		p.longtime = initial_timeout
+		p.time = initial_timeout
+	else
+		p.time = p.longtime + timeout
+		p.longtime = p.time
+	end
+
+	p.interact = privs.interact
 	
 	if not cloaking_mod then
-		if not players[name].properties then
-			players[name].properties = player:get_properties()
+		if not p.properties then
+			p.properties = player:get_properties()
 		end
 
 		player:set_properties({
@@ -203,6 +209,8 @@ minetest.register_on_dieplayer(function(player)
 	privs.interact = nil
 
 	minetest.set_player_privs(name, privs)
+
+	players[name] = p
 
 	storage:set_string("players", minetest.serialize(players))
 end)
