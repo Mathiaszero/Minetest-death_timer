@@ -18,6 +18,37 @@ if not players then
 	storage:set_string("players", minetest.serialize(players))
 end
 
+function death_timer.show(player, name)
+	if not cloaking_mod then
+		if p.properties then
+			local player = minetest.get_player_by_name(name)
+			
+			if player then
+				player:set_properties(p.properties)
+			end
+
+			p.properties = nil
+		end
+	elseif minetest.get_player_by_name(name) then
+		cloaking.unhide_player(name)
+	end
+end
+
+function death_timer.hide(player, name)
+	if not cloaking_mod then
+		if not players[name].properties then
+			players[name].properties = player:get_properties()
+		end
+
+		player:set_properties({
+			visual_size    = {x = 0, y = 0},
+			["selectionbox"] = {0, 0, 0, 0, 0, 0},
+		})
+	else
+		cloaking.hide_player(name)
+	end
+end
+
 function death_timer.create_deathholder(player, name)
 	local obj = player_objs[name]
 	if player and obj then
@@ -46,18 +77,7 @@ minetest.register_on_joinplayer(function(player)
 				return
 			end
 
-			if not cloaking_mod then
-				if not players[name].properties then
-					players[name].properties = player:get_properties()
-				end
-		
-				player:set_properties({
-					visual_size    = {x = 0, y = 0},
-					["selectionbox"] = {0, 0, 0, 0, 0, 0},
-				})
-			else
-				cloaking.hide_player(name)
-			end
+			death_timer.hide(player, name)
 
 			death_timer.create_deathholder(player, name)
 
@@ -131,19 +151,7 @@ function death_timer.loop(name)
 			minetest.set_player_privs(name, privs)
 		end
 
-		if not cloaking_mod then
-			if p.properties then
-				local player = minetest.get_player_by_name(name)
-				
-				if player then
-					player:set_properties(p.properties)
-				end
-
-				p.properties = nil
-			end
-		elseif minetest.get_player_by_name(name) then
-			cloaking.unhide_player(name)
-		end
+		death_timer.show(player, name)
 
 		p.time = nil
 
@@ -193,18 +201,7 @@ minetest.register_on_dieplayer(function(player)
 
 	p.interact = privs.interact
 	
-	if not cloaking_mod then
-		if not p.properties then
-			p.properties = player:get_properties()
-		end
-
-		player:set_properties({
-			visual_size    = {x = 0, y = 0},
-			["selectionbox"] = {0, 0, 0, 0, 0, 0},
-		})
-	else
-		cloaking.hide_player(player)
-	end
+	death_timer.hide(player, name)
 
 	privs.interact = nil
 
@@ -244,7 +241,7 @@ end)
 minetest.register_on_player_hpchange(function(player, hp_change, reason)
 	local p = players[player:get_player_name()]
 	
-	if p and p.time and p.time > 1 then
+	if p and p.time then
 		return 100
 	end
 	
