@@ -137,7 +137,7 @@ function death_timer.loop(name)
 	local p = players[name]
 	if not p or not p.time or p.time < 1 then
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
-		"label[4.85,1.35;Wait" ..
+		"label[5.15,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
 
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
@@ -164,12 +164,16 @@ function death_timer.loop(name)
 		death_timer.show(player, name)
 
 		loops[name] = nil
-
-		storage:set_string("players", minetest.serialize(players))
+		if timeout ~= 0 and timeout_reduce_loop ~= 0 and timeout_reduce_rate ~= 0 then
+			storage:set_string("players", minetest.serialize(players))
+		else
+			players[name] = nil
+			storage:set_string("players", minetest.serialize(players))
+		end
 	else
 		p.time = p.time - 1
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
-			"label[4.85,1.35;Wait" ..
+			"label[5.15,1.35;Wait" ..
 			"]button[4,3;3,0.5;death_button;" .. p.time .."]"
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
 		minetest.after(1, death_timer.loop, name)
@@ -231,11 +235,11 @@ minetest.after(0, function()
 
 		if players[name] and players[name].time then
 			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
-			"label[4.85,1.35;Wait" ..
+			"label[5.15,1.35;Wait" ..
 			"]button[4,3;3,0.5;death_button;" .. players[name].time .."]"
 		else
 			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
-			"label[4.85,1.35;Wait" ..
+			"label[5.15,1.35;Wait" ..
 			"]button_exit[4,3;3,0.5;death_button;Play" .."]"
 		end
 
@@ -254,4 +258,6 @@ minetest.register_on_player_hpchange(function(player, hp_change, reason)
 	return hp_change
 end, true)
 
-minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
+if timeout ~= 0 and timeout_reduce_loop ~= 0 and timeout_reduce_rate ~= 0 then
+	minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
+end
