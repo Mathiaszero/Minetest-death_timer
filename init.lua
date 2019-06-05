@@ -13,21 +13,27 @@ local cloaking_mod = minetest.global_exists("cloaking")
 
 players = minetest.deserialize(storage:get_string("players"))
 
-if not players then
+if not players or timeout == 0 then
 	players = {}
 	storage:set_string("players", minetest.serialize(players))
 end
 
 function death_timer.show(player, name)
 	if not cloaking_mod then
+		local p = players[name]
 		if p.properties then
 			local player = minetest.get_player_by_name(name)
 			
 			if player then
-				player:set_properties(p.properties)
+				local props = p.properties
+				player:set_properties({
+					visual_size    = props.visual_size,
+					["selectionbox"] = props["selectionbox"],
+				})
 			end
 
 			p.properties = nil
+			players[name] = p
 		end
 	elseif minetest.get_player_by_name(name) then
 		cloaking.unhide_player(name)
@@ -129,7 +135,7 @@ end
 
 function death_timer.loop(name)
 	local p = players[name]
-	if not p.time or p.time < 1 then
+	if not p or not p.time or p.time < 1 then
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 		"label[4.85,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
@@ -151,11 +157,11 @@ function death_timer.loop(name)
 			minetest.set_player_privs(name, privs)
 		end
 
-		death_timer.show(player, name)
-
 		p.time = nil
 
 		players[name] = p
+
+		death_timer.show(player, name)
 
 		loops[name] = nil
 
@@ -201,13 +207,13 @@ minetest.register_on_dieplayer(function(player)
 
 	p.interact = privs.interact
 	
+	players[name] = p
+	
 	death_timer.hide(player, name)
 
 	privs.interact = nil
 
 	minetest.set_player_privs(name, privs)
-
-	players[name] = p
 
 	storage:set_string("players", minetest.serialize(players))
 end)
