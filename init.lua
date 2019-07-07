@@ -218,15 +218,15 @@ end)
 
 minetest.register_on_mods_loaded(function()
 	minetest.register_on_respawnplayer(function(player)
+		if player:get_hp() < 1 then
+			return
+		end
 		local name = player:get_player_name()
-
 		minetest.after(1, function(name)
 			local player = minetest.get_player_by_name(name)
 			death_timer.create_deathholder(player, name)
 		end, name)
-
 		local formspec
-
 		if players[name] and players[name].time then
 			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 			"label[5.15,1.35;Wait" ..
@@ -236,7 +236,6 @@ minetest.register_on_mods_loaded(function()
 			"label[5.15,1.35;Wait" ..
 			"]button_exit[4,3;3,0.5;death_button;Play" .."]"
 		end
-
 		minetest.after(1, minetest.show_formspec, name, "death_timer:death_screen", formspec)
 		minetest.after(2, death_timer.create_loop, name)
 	end)
@@ -244,11 +243,9 @@ end)
 
 minetest.register_on_player_hpchange(function(player, hp_change, reason)
 	local p = players[player:get_player_name()]
-	
 	if p and p.time then
 		return 100
 	end
-	
 	return hp_change
 end, true)
 
