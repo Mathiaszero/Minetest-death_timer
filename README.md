@@ -1,5 +1,9 @@
 # death_timer
-death_timer mod forces players to wait a amount after death.
+Players are forced to wait an amount of time on re-spawn. 
+
+On death players are cloaked and their interact privilege is removed. 
+
+Players are held in place by a entity.
 
 # config
 

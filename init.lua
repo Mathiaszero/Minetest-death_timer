@@ -216,7 +216,7 @@ minetest.register_on_dieplayer(function(player)
 	end
 end)
 
-minetest.after(0, function()
+minetest.register_on_mods_loaded(function()
 	minetest.register_on_respawnplayer(function(player)
 		local name = player:get_player_name()
 
