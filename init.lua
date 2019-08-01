@@ -127,7 +127,7 @@ function death_timer.loop(name)
 			obj:set_detach()
 			obj:remove()
 			obj = nil
-			player_objs[name] = obj
+			player_objs[name] = nil
 		end
 		if p then
 			if p.interact then
@@ -217,7 +217,7 @@ end)
 
 minetest.register_on_player_hpchange(function(player, hp_change, reason)
 	local p = players[player:get_player_name()]
-	if p and p.time then
+	if p and p.time and p.time > 0 then
 		return 100
 	end
 	return hp_change
