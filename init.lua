@@ -12,7 +12,7 @@ local cloaking_mod = minetest.global_exists("cloaking")
 function death_timer.show(player, name)
 	if not cloaking_mod then
 		local p = players[name]
-		if p.properties then
+		if p and p.properties then
 			local player = minetest.get_player_by_name(name)
 			if player then
 				local props = p.properties
@@ -153,14 +153,14 @@ end)
 
 minetest.register_on_dieplayer(function(player)
 	local name = player:get_player_name()
-
 	local p = players[name]
-	if p or p.time then
+	if p then
 		return
 	end
-
+	if p and p.time then
+		return
+	end
 	local privs = minetest.get_player_privs(name)
-
 	if not p then
 		p = {}
 		p.longtime = initial_timeout
@@ -169,7 +169,6 @@ minetest.register_on_dieplayer(function(player)
 		p.time = p.longtime + timeout
 		p.longtime = p.time
 	end
-
 	p.interact = privs.interact
 	players[name] = p
 	death_timer.hide(player, name)
