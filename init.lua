@@ -1,6 +1,5 @@
-local storage
 local death_timer = {}
-local players
+local players = {}
 local player_objs = {}
 local loops = {}
 
@@ -8,20 +7,7 @@ local initial_timeout = tonumber(minetest.settings:get("death_timer.initial_time
 local timeout = tonumber(minetest.settings:get("death_timer.timeout")) or 1
 local timeout_reduce_loop = tonumber(minetest.settings:get("death_timer.timeout_reduce_loop")) or 3600
 local timeout_reduce_rate = tonumber(minetest.settings:get("death_timer.timeout_reduce_rate")) or 1
-local enable_storage = minetest.settings:get_bool("death_timer.storage") or true
 local cloaking_mod = minetest.global_exists("cloaking")
-
-if enable_storage then
-	storage = minetest.get_mod_storage()
-	players = minetest.deserialize(storage:get_string("players"))
-end
-
-if not players or timeout == 0 or not enable_storage then
-	players = {}
-	if enable_storage then
-		storage:set_string("players", minetest.serialize(players))
-	end
-end
 
 function death_timer.show(player, name)
 	if not cloaking_mod then
@@ -107,24 +93,6 @@ minetest.register_entity("death_timer:death", {
 	end
 })
 
-function death_timer.reduce_loop()
-	for k, v in pairs(players) do
-		if players[k].longtime > 0 then
-			players[k].longtime = players[k].longtime - timeout_reduce_rate
-			if players[k].longtime < 0 then
-				minetest.after(0, function(k) players[k] = nil end, k)
-			end
-		else
-			minetest.after(0, function(k) players[k] = nil end, k)
-		end
-	end
-	if enable_storage then
-		minetest.after(1, function() storage:set_string("players", minetest.serialize(players)) end)
-	end
-	
-	minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
-end
-
 function death_timer.create_loop(name)
 	if not loops[name] then
 		loops[name] = true
@@ -155,17 +123,14 @@ function death_timer.loop(name)
 			end
 			p.time = nil
 			players[name] = p
+		else
+			local privs = minetest.get_player_privs(name)
+			privs.interact = true
+			minetest.set_player_privs(name, privs)
 		end
 		death_timer.show(player, name)
 		loops[name] = nil
-		if timeout ~= 0 and timeout_reduce_loop ~= 0 and timeout_reduce_rate ~= 0 and enable_storage then
-			storage:set_string("players", minetest.serialize(players))
-		else
-			players[name] = nil
-			if enable_storage then
-				storage:set_string("players", minetest.serialize(players))
-			end
-		end
+		players[name] = nil
 	else
 		p.time = p.time - 1
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
@@ -190,7 +155,7 @@ minetest.register_on_dieplayer(function(player)
 	local name = player:get_player_name()
 
 	local p = players[name]
-	if p and p.time and p.time < 1 then
+	if p or p.time then
 		return
 	end
 
@@ -210,10 +175,6 @@ minetest.register_on_dieplayer(function(player)
 	death_timer.hide(player, name)
 	privs.interact = nil
 	minetest.set_player_privs(name, privs)
-
-	if enable_storage then
-		storage:set_string("players", minetest.serialize(players))
-	end
 end)
 
 minetest.register_on_mods_loaded(function()

@@ -6,5 +6,3 @@ death_timer.timeout (Timeout) int 1
 death_timer.timeout_reduce_loop (Reduce-tick) int 3600
 # The amount to reduce from the death timer timeout (disable this by setting it to zero)
 death_timer.timeout_reduce_rate (Reduce-rate) int 1
-# Use mod storage.
-death_timer.storage (Storage) bool true
