@@ -117,6 +117,7 @@ end
 function death_timer.loop(name)
 	local p = players[name]
 	if not p or not p.time or p.time < 1 then
+		death_timer.show(player, name)
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 		"label[5.15,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
@@ -143,7 +144,6 @@ function death_timer.loop(name)
 			minetest.set_player_privs(name, privs)
 			players[name] = nil
 		end
-		death_timer.show(player, name)
 		loops[name] = nil
 	else
 		p.time = p.time - 1
