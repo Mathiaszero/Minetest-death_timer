@@ -118,11 +118,8 @@ function death_timer.loop(name)
 			if p.interact then
 				local privs = minetest.get_player_privs(name)
 				privs.interact = p.interact
-				p.interact = nil
 				minetest.set_player_privs(name, privs)
 			end
-			p.time = nil
-			players[name] = p
 		else
 			local privs = minetest.get_player_privs(name)
 			privs.interact = true
