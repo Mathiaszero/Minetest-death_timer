@@ -217,7 +217,7 @@ end)
 
 minetest.register_on_player_hpchange(function(player, hp_change, reason)
 	local p = players[player:get_player_name()]
-	if p and p.time and p.time > 0 then
+	if p and p.time and p.time > 1 then
 		return 100
 	end
 	return hp_change
