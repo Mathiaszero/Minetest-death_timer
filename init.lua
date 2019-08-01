@@ -93,6 +93,20 @@ minetest.register_entity("death_timer:death", {
 	end
 })
 
+function death_timer.reduce_loop()
+	for k, v in pairs(players) do
+		if players[k].longtime > 0 then
+			players[k].longtime = players[k].longtime - timeout_reduce_rate
+			if players[k].longtime < 0 then
+				minetest.after(0, function(k) players[k] = nil end, k)
+			end
+		else
+			minetest.after(0, function(k) players[k] = nil end, k)
+		end
+	end
+	minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
+end
+
 function death_timer.create_loop(name)
 	if not loops[name] then
 		loops[name] = true
@@ -120,14 +134,17 @@ function death_timer.loop(name)
 				privs.interact = p.interact
 				minetest.set_player_privs(name, privs)
 			end
+			if timeout == 0 and timeout_reduce_loop == 0 and timeout_reduce_rate == 0 then
+				players[name] = nil
+			end
 		else
 			local privs = minetest.get_player_privs(name)
 			privs.interact = true
 			minetest.set_player_privs(name, privs)
+			players[name] = nil
 		end
 		death_timer.show(player, name)
 		loops[name] = nil
-		players[name] = nil
 	else
 		p.time = p.time - 1
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
