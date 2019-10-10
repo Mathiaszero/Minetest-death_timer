@@ -22,17 +22,42 @@ minetest.register_chatcommand("settimeout", {
 	end,
 })
 --]]
+--[[
 minetest.register_chatcommand("settimeout", {
 	params="<value>",
 	func=function(_,value)
-		--minetest.chat_send_all(value)
-		--globaltimeout=value
-		initial_timeout=tonumber(value)
-		timeout=tonumber(value)
+		minetest.chat_send_all(value)
+		_,_,text1,text2= string.find(value,"(%w+):(%w+)")--before underline
+		if text1==nil or text2==nil then return end
+		--minetest.chat_send_all(text1)
+		if text1=="all" then
+		
+		end
 	end,
 })
-
-
+--]]
+--[[
+minetest.register_chatcommand("settimeout", {
+	params="<value>",
+	func=function(_,value)
+		minetest.chat_send_all(value)
+		_,_,text1,text2= string.find(value,"(%w+):(%w+)")--before underline
+		--text2= --after underline
+		if text1==nil or text2==nil then return end
+		minetest.chat_send_all(text1)
+		local user= minetest.get_player_by_name("singleplayer")
+		if user then
+			--minetest.chat_send_all(value)
+			--globaltimeout=value
+			initial_timeout=tonumber(value)
+			timeout=tonumber(value)
+			minetest.chat_send_player(playerSelf,"Death time set to: "..value)
+		else
+			minetest.chat_send_player(playerSelf,"Error! You do not have permission to run this command.")
+		end
+	end,
+})
+--]]
 
 function death_timer.show(player, name)
 	if not cloaking_mod then
@@ -89,6 +114,7 @@ end
 minetest.register_on_joinplayer(function(player)
 	numDeaths=0
 	global_timeout=8
+	playerSelf=tostring(player:get_player_name())
 	
 
 
@@ -271,7 +297,7 @@ end)
 		end, name)
 		local formspec
 		if players[name] and players[name].time then
-			--[[
+			
 			if numDeaths>=2 then
 				players[name].time=initial_timeout
 				numDeaths=1
