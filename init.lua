@@ -3,11 +3,36 @@ local players = {}
 local player_objs = {}
 local loops = {}
 
-local initial_timeout = tonumber(minetest.settings:get("death_timer.initial_timeout")) or 8
-local timeout = tonumber(minetest.settings:get("death_timer.timeout")) or 1
-local timeout_reduce_loop = tonumber(minetest.settings:get("death_timer.timeout_reduce_loop")) or 3600
-local timeout_reduce_rate = tonumber(minetest.settings:get("death_timer.timeout_reduce_rate")) or 1
+local initial_timeout = 8 --or tonumber(minetest.settings:get("death_timer.initial_timeout"))
+--local initial_timeout = tonumber(minetest.settings:get("death_timer.initial_timeout")) or 8
+local timeout = 8 --or tonumber(minetest.settings:get("death_timer.timeout"))-- or 1
+--local timeout = tonumber(minetest.settings:get("death_timer.timeout")) or 1
+--local timeout_reduce_loop = tonumber(minetest.settings:get("death_timer.timeout_reduce_loop")) or 3600
+local timeout_reduce_loop = 3600
+--local timeout_reduce_rate = tonumber(minetest.settings:get("death_timer.timeout_reduce_rate")) or 1
+local timeout_reduce_rate = 1
 local cloaking_mod = minetest.global_exists("cloaking")
+
+--[[
+minetest.register_chatcommand("settimeout", {
+	func=function(name,param)
+		--minetest.chat_send_all("YES")
+		str2=string.match(param,"%d")
+		minetest.chat_send_all(str2)
+	end,
+})
+--]]
+minetest.register_chatcommand("settimeout", {
+	params="<value>",
+	func=function(_,value)
+		--minetest.chat_send_all(value)
+		--globaltimeout=value
+		initial_timeout=tonumber(value)
+		timeout=tonumber(value)
+	end,
+})
+
+
 
 function death_timer.show(player, name)
 	if not cloaking_mod then
@@ -62,6 +87,14 @@ function death_timer.create_deathholder(player, name)
 end
 
 minetest.register_on_joinplayer(function(player)
+	numDeaths=0
+	global_timeout=8
+	
+
+
+	
+	--minetest.chat_send_all("deaths: "..numDeaths)
+
 	minetest.after(5, function(name)
 		local p = players[name]
 		if p and p.time and p.time > 1 then
@@ -74,6 +107,7 @@ minetest.register_on_joinplayer(function(player)
 			death_timer.create_loop(name)
 		end
 	end, player:get_player_name())
+
 end)
 
 minetest.register_entity("death_timer:death", {
@@ -115,13 +149,22 @@ function death_timer.create_loop(name)
 end
 
 function death_timer.loop(name)
+			--death_timer.hide(player, name)
+			--death_timer.create_deathholder(player, name)
+			--death_timer.create_loop(name)
 	local p = players[name]
+
+	
+
 	if not p or not p.time or p.time < 1 then
+
+
 		death_timer.show(player, name)
 		loops[name] = nil
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 		"label[5.15,1.35;Wait" ..
 		"]button_exit[4,3;3,0.5;death_button;Play" .."]"
+		--p.time=8
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
 		local obj = player_objs[name]
 		if obj then
@@ -144,14 +187,27 @@ function death_timer.loop(name)
 			privs.interact = true
 			minetest.set_player_privs(name, privs)
 			players[name] = nil
+
+		--p.longtime = initial_timeout
+		--p.time = initial_timeout
 		end
 	else
+--[[
+		if numDeaths>=2 then
+			--minetest.after(2)
+			p.longtime = initial_timeout
+			p.time = initial_timeout
+			numDeaths=1
+		end
+--]]
+		--minetest.chat_send_all(p.time)
 		p.time = p.time - 1
 		local formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 			"label[5.15,1.35;Wait" ..
 			"]button[4,3;3,0.5;death_button;" .. p.time .."]"
 		minetest.show_formspec(name, "death_timer:death_screen", formspec)
 		minetest.after(1, death_timer.loop, name)
+		
 	end
 end
 
@@ -166,13 +222,17 @@ minetest.register_on_leaveplayer(function(player)
 end)
 
 minetest.register_on_dieplayer(function(player)
+	numDeaths=numDeaths+1
+	--minetest.chat_send_all("deaths: "..numDeaths)
 	local name = player:get_player_name()
-	local p = players[name]
+	p = players[name]
 	if p then
 		return
+
 	end
 	if p and p.time then
 		return
+
 	end
 	local privs = minetest.get_player_privs(name)
 	if not p then
@@ -182,15 +242,24 @@ minetest.register_on_dieplayer(function(player)
 	else
 		p.time = p.longtime + timeout
 		p.longtime = p.time
+		p.longtime = initial_timeout
+		p.time = initial_timeout
+
+		--p = {}
+		--p.longtime = initial_timeout
+		--p.time = initial_timeout
 	end
 	p.interact = privs.interact
 	players[name] = p
 	death_timer.hide(player, name)
 	privs.interact = nil
 	minetest.set_player_privs(name, privs)
+
+	--p.longtime = initial_timeout
+	--p.time = initial_timeout
 end)
 
-minetest.register_on_mods_loaded(function()
+--minetest.register_on_mods_loaded(function()
 	minetest.register_on_respawnplayer(function(player)
 		if player:get_hp() < 1 then
 			return
@@ -202,26 +271,45 @@ minetest.register_on_mods_loaded(function()
 		end, name)
 		local formspec
 		if players[name] and players[name].time then
+			--[[
+			if numDeaths>=2 then
+				players[name].time=initial_timeout
+				numDeaths=1
+			end
+			--]]
 			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 			"label[5.15,1.35;Wait" ..
 			"]button[4,3;3,0.5;death_button;" .. players[name].time .."]"
+		--minetest.chat_send_all("Player name time: "..players[name].time)
 		else
 			formspec = "size[11,5.5]bgcolor[#320000b4;true]" ..
 			"label[5.15,1.35;Wait" ..
 			"]button_exit[4,3;3,0.5;death_button;Play" .."]"
+		--p.time=8
 		end
 		minetest.after(1, minetest.show_formspec, name, "death_timer:death_screen", formspec)
 		minetest.after(2, death_timer.create_loop, name)
 	end)
-end)
+--end)
 
 minetest.register_on_player_hpchange(function(player, hp_change, reason)
-	local p = players[player:get_player_name()]
-	if p and p.time and p.time > 1 then
+	p = players[player:get_player_name()]
+	if p and p.time and tonumber(p.time) > 1 then
 		return 100
 	end
 	return hp_change
 end, true)
+
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+	
+	--p.longtime = initial_timeout
+	--p.time = initial_timeout
+	--[[
+	if formname == "default:team_choose" then -- This is your form name
+		print("Player "..player:get_player_name().." submitted fields "..dump(fields))
+	end
+	--]]
+end)
 
 if timeout ~= 0 and timeout_reduce_loop ~= 0 and timeout_reduce_rate ~= 0 then
 	minetest.after(timeout_reduce_loop, death_timer.reduce_loop)
