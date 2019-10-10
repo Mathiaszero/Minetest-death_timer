@@ -6,7 +6,7 @@ On death players are cloaked and their interact privilege is removed.
 Players are held in place by a entity.
 
 # Additional note
-Fork by Mathias for a bug fix as Coder12's release has the respawn delay broken after the player respawns after the second death. Since this mod is more functional, it would be a better appropriate candidate for release on ContentDB.
+Fork by Mathias for a bug fix as Coder12's release has the respawn delay broken after the player respawns after the second death. Since this mod is more functional it would be a better appropriate candidate for release on ContentDB.
 
 # config
 
