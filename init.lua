@@ -297,7 +297,8 @@ end)
 		end, name)
 		local formspec
 		if players[name] and players[name].time then
-			
+			--if statement bug fix that changes the zero value to pre-set time
+			--player now dies with the same delay each time
 			if numDeaths>=2 then
 				players[name].time=initial_timeout
 				numDeaths=1
