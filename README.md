@@ -8,7 +8,7 @@ Players are held in place by a entity.
 # Additional note
 Fork by Mathias for a bug fix as Coder12's release has the respawn delay broken after the player respawns after the second death. Since this mod is more functional it would be a better appropriate candidate for release on ContentDB.
 
-Optimized for 5.0.0, 5.0.1, 5.1.0.
+Optimized for 5.0.0, 5.0.1, 5.1.0, 5.2.0.
 
 # config
 
